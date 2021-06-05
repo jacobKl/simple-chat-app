@@ -16,7 +16,7 @@ class ChatClient {
 
     this.chatRef.addEventListener("submit", (e) => {
       e.preventDefault();
-      this.sendMessage();
+      this.recognizeCommand();
     });
   }
 
@@ -25,10 +25,15 @@ class ChatClient {
 
     fetch("/joinChat", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: this.username, color: this.getRandomHexColor() }),
     })
       .then((res) => res.json())
       .then((res) => {
-        this.joinedId = res;
+        this.joinedId = res.joinedId;
+        this.userId = res.userId;
         this.showChat();
         this.getChatStatus();
       });
@@ -43,7 +48,7 @@ class ChatClient {
 
   sendMessage() {
     const data = JSON.stringify({
-      username: this.username,
+      userId: this.userId,
       message: this.messageRef.value,
     });
     fetch("/sendMessage", {
@@ -53,8 +58,8 @@ class ChatClient {
         "Content-Type": "application/json",
       },
     });
-    this.chatBody.innerHTML += `<div class='col-12 d-flex'><b>${this.username}</b>: ${this.messageRef.value}</div>`;
     this.messageRef.value = "";
+    this.getChatStatus();
     this.chatBody.scrollTop = this.chatBody.scrollHeight;
   }
 
@@ -68,10 +73,28 @@ class ChatClient {
     })
       .then((res) => res.json())
       .then((res) => {
-        const messages = res.map((message) => `<div class='col-12 d-flex'><b>${message.username}</b>: ${message.message}</div>`);
+        const messages = res.map(
+          (message) => `<div class='col-12 d-flex'><b style="color: ${message.color}">${message.username}</b>:&nbsp; <p class='m-0 message-inner'> ${message.message}</p></div>`
+        );
         this.chatBody.innerHTML = "";
         messages.forEach((mess) => (this.chatBody.innerHTML += mess));
+        if ($(".message-inner").length) {
+          $(".message-inner").emoticonize({ delay: 0 });
+        }
       })
       .then((res) => setTimeout(this.getChatStatus.bind(this), 3000));
+  }
+
+  getRandomHexColor() {
+    const randomColor = Math.floor(Math.random() * 16777215).toString(16);
+    return "#" + randomColor;
+  }
+
+  recognizeCommand() {
+    if (this.messageRef.value == "/quit") {
+      location.reload();
+    } else {
+      this.sendMessage();
+    }
   }
 }
