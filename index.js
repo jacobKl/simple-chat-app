@@ -39,6 +39,6 @@ app.post("/getMessages", (req, res) => {
   res.end(JSON.stringify(matched));
 });
 
-app.listen(3000, function () {
+app.listen(process.env.PORT, function () {
   console.log("Listenin on port jakistam ;p ");
 });
